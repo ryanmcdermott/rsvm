@@ -1,7 +1,7 @@
 pub struct VirtualMachine {
-    ip: usize,
-    stack: Vec<usize>,
-    memory: Vec<usize>,
+    ip: i64,
+    stack: Vec<i64>,
+    memory: Vec<i64>,
 }
 
 pub enum OpCode {
@@ -27,46 +27,50 @@ pub enum OpCode {
 }
 
 pub enum Instruction {
-    Push(usize),
+    Push(i64),
     Pop,
     Add,
     Sub,
     Mul,
     Div,
-    Jump(usize),
-    JumpIfEqual(usize),
-    JumpIfNotEqual(usize),
-    JumpIfLessThan(usize),
-    JumpIfGreaterThan(usize),
-    JumpIfLessThanOrEqual(usize),
-    JumpIfGreaterThanOrEqual(usize),
-    Call(usize),
+    Jump(i64),
+    JumpIfEqual(i64),
+    JumpIfNotEqual(i64),
+    JumpIfLessThan(i64),
+    JumpIfGreaterThan(i64),
+    JumpIfLessThanOrEqual(i64),
+    JumpIfGreaterThanOrEqual(i64),
+    Call(i64),
     Return,
     Print,
-    Store(usize),
-    Load(usize),
+    Store(i64),
+    Load(i64),
     Halt,
 }
 
 impl VirtualMachine {
-    pub fn new(stack_size: usize, memory_size: usize) -> VirtualMachine {
+    pub fn new(stack_size: i64, memory_size: i64) -> VirtualMachine {
         VirtualMachine {
             ip: 0,
-            stack: vec![0; stack_size],
-            memory: vec![0; memory_size],
+            stack: vec![0; usize::try_from(stack_size).unwrap().to_owned()],
+            memory: vec![0; usize::try_from(memory_size).unwrap().to_owned()],
         }
     }
 
-    pub fn load_program(&mut self, program: &[usize]) {
+    pub fn load_program(&mut self, program: &[i64]) {
         assert!(program.len() <= self.memory.len());
         for (i, &instruction) in program.iter().enumerate() {
             self.memory[i] = instruction;
         }
     }
 
+    pub fn to_usize(&self, value: i64) -> usize {
+        usize::try_from(value).unwrap().to_owned()
+    }
+
     pub fn execute(&mut self) {
         loop {
-            let opcode = self.memory[self.ip];
+            let opcode = self.memory[self.ip as usize];
             match opcode {
                 // Halt
                 0x00 => {
@@ -74,7 +78,7 @@ impl VirtualMachine {
                 }
                 // Push
                 0x01 => {
-                    let value = self.memory[self.ip + 1];
+                    let value = self.memory[(self.ip + 1) as usize];
                     self.stack.push(value);
                     self.ip += 2;
                 }
@@ -117,14 +121,14 @@ impl VirtualMachine {
                 }
                 // Jump
                 0x07 => {
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     self.ip = address;
                 }
                 // JumpIfEqual
                 0x08 => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     if op1 == op2 {
                         self.ip = address;
                     } else {
@@ -135,7 +139,7 @@ impl VirtualMachine {
                 0x09 => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     if op1 != op2 {
                         self.ip = address;
                     } else {
@@ -146,7 +150,7 @@ impl VirtualMachine {
                 0x0A => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     if op1 < op2 {
                         self.ip = address;
                     } else {
@@ -157,7 +161,7 @@ impl VirtualMachine {
                 0x0B => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     if op1 > op2 {
                         self.ip = address;
                     } else {
@@ -168,7 +172,7 @@ impl VirtualMachine {
                 0x0C => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     if op1 <= op2 {
                         self.ip = address;
                     } else {
@@ -179,7 +183,7 @@ impl VirtualMachine {
                 0x0D => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     if op1 >= op2 {
                         self.ip = address;
                     } else {
@@ -188,7 +192,7 @@ impl VirtualMachine {
                 }
                 // Call
                 0x0E => {
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     self.stack.push(self.ip + 2);
                     self.ip = address;
                 }
@@ -205,15 +209,15 @@ impl VirtualMachine {
                 }
                 // Store
                 0x11 => {
-                    let address = self.memory[self.ip + 1];
+                    let address = self.memory[(self.ip + 1) as usize];
                     let value = self.stack.pop().unwrap();
-                    self.memory[address] = value;
+                    self.memory[address as usize] = value;
                     self.ip += 2;
                 }
                 // Load
                 0x12 => {
-                    let address = self.memory[self.ip + 1];
-                    let value = self.memory[address];
+                    let address = self.memory[(self.ip + 1) as usize];
+                    let value = self.memory[address as usize];
                     self.stack.push(value);
                     self.ip += 2;
                 }
@@ -226,7 +230,7 @@ impl VirtualMachine {
 }
 
 pub struct Assembler {
-    pub machine_code: Vec<usize>,
+    pub machine_code: Vec<i64>,
 }
 
 impl Assembler {
@@ -240,73 +244,72 @@ impl Assembler {
         for instruction in instructions {
             match instruction {
                 Instruction::Halt => {
-                    self.machine_code.push(OpCode::Halt as usize);
+                    self.machine_code.push(OpCode::Halt as i64);
                 }
                 Instruction::Push(value) => {
-                    self.machine_code.push(OpCode::Push as usize);
+                    self.machine_code.push(OpCode::Push as i64);
                     self.machine_code.push(value);
                 }
                 Instruction::Pop => {
-                    self.machine_code.push(OpCode::Pop as usize);
+                    self.machine_code.push(OpCode::Pop as i64);
                 }
                 Instruction::Add => {
-                    self.machine_code.push(OpCode::Add as usize);
+                    self.machine_code.push(OpCode::Add as i64);
                 }
                 Instruction::Sub => {
-                    self.machine_code.push(OpCode::Sub as usize);
+                    self.machine_code.push(OpCode::Sub as i64);
                 }
                 Instruction::Mul => {
-                    self.machine_code.push(OpCode::Mul as usize);
+                    self.machine_code.push(OpCode::Mul as i64);
                 }
                 Instruction::Div => {
-                    self.machine_code.push(OpCode::Div as usize);
+                    self.machine_code.push(OpCode::Div as i64);
                 }
                 Instruction::Jump(address) => {
-                    self.machine_code.push(OpCode::Jump as usize);
+                    self.machine_code.push(OpCode::Jump as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::JumpIfEqual(address) => {
-                    self.machine_code.push(OpCode::JumpIfEqual as usize);
+                    self.machine_code.push(OpCode::JumpIfEqual as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::JumpIfNotEqual(address) => {
-                    self.machine_code.push(OpCode::JumpIfNotEqual as usize);
+                    self.machine_code.push(OpCode::JumpIfNotEqual as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::JumpIfLessThan(address) => {
-                    self.machine_code.push(OpCode::JumpIfLessThan as usize);
+                    self.machine_code.push(OpCode::JumpIfLessThan as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::JumpIfGreaterThan(address) => {
-                    self.machine_code.push(OpCode::JumpIfGreaterThan as usize);
+                    self.machine_code.push(OpCode::JumpIfGreaterThan as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::JumpIfLessThanOrEqual(address) => {
-                    self.machine_code
-                        .push(OpCode::JumpIfLessThanOrEqual as usize);
+                    self.machine_code.push(OpCode::JumpIfLessThanOrEqual as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::JumpIfGreaterThanOrEqual(address) => {
                     self.machine_code
-                        .push(OpCode::JumpIfGreaterThanOrEqual as usize);
+                        .push(OpCode::JumpIfGreaterThanOrEqual as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::Call(address) => {
-                    self.machine_code.push(OpCode::Call as usize);
+                    self.machine_code.push(OpCode::Call as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::Return => {
-                    self.machine_code.push(OpCode::Return as usize);
+                    self.machine_code.push(OpCode::Return as i64);
                 }
                 Instruction::Print => {
-                    self.machine_code.push(OpCode::Print as usize);
+                    self.machine_code.push(OpCode::Print as i64);
                 }
                 Instruction::Store(address) => {
-                    self.machine_code.push(OpCode::Store as usize);
+                    self.machine_code.push(OpCode::Store as i64);
                     self.machine_code.push(address);
                 }
                 Instruction::Load(address) => {
-                    self.machine_code.push(OpCode::Load as usize);
+                    self.machine_code.push(OpCode::Load as i64);
                     self.machine_code.push(address);
                 }
             }
@@ -340,7 +343,7 @@ mod tests {
         vm.execute();
         assert_eq!(
             vm.stack.last().unwrap().to_owned(),
-            usize::try_from(3).unwrap()
+            i64::try_from(3).unwrap()
         );
     }
 }
