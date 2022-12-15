@@ -325,7 +325,7 @@ impl Assembler {
 }
 
 mod tests {
-    use super::{Assembler, Instruction, VirtualMachine};
+    use super::{Assembler, Instruction, OpCode, VirtualMachine};
 
     #[test]
     fn test_assembler() {
@@ -339,14 +339,31 @@ mod tests {
         ]);
         assert_eq!(
             assembler.machine_code,
-            vec![0x01, 1, 0x01, 2, 0x03, 0x10, 0x00]
+            vec![
+                OpCode::Push as i64,
+                1,
+                OpCode::Push as i64,
+                2,
+                OpCode::Add as i64,
+                OpCode::Print as i64,
+                OpCode::Halt as i64
+            ]
         );
     }
 
     #[test]
     fn test_virtual_machine() {
         let mut vm = VirtualMachine::new(1024, 1024);
-        vm.memory = vec![0x01, 1, 0x01, 2, 0x03, 0x10, 0x00];
+        vm.memory = vec![
+            OpCode::Push as i64,
+            1,
+            OpCode::Push as i64,
+            2,
+            OpCode::Add as i64,
+            OpCode::Print as i64,
+            OpCode::Halt as i64,
+        ];
+
         vm.execute();
         assert_eq!(
             vm.stack.last().unwrap().to_owned(),
