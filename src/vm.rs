@@ -1,3 +1,5 @@
+use std::convert::From;
+
 pub struct VirtualMachine {
     ip: i64,
     stack: Vec<i64>,
@@ -24,6 +26,33 @@ pub enum OpCode {
     Print = 0x10,
     Store = 0x11,
     Load = 0x12,
+}
+
+impl From<i64> for OpCode {
+    fn from(value: i64) -> Self {
+        match value {
+            0x00 => OpCode::Halt,
+            0x01 => OpCode::Push,
+            0x02 => OpCode::Pop,
+            0x03 => OpCode::Add,
+            0x04 => OpCode::Sub,
+            0x05 => OpCode::Mul,
+            0x06 => OpCode::Div,
+            0x07 => OpCode::Jump,
+            0x08 => OpCode::JumpIfEqual,
+            0x09 => OpCode::JumpIfNotEqual,
+            0x0A => OpCode::JumpIfLessThan,
+            0x0B => OpCode::JumpIfGreaterThan,
+            0x0C => OpCode::JumpIfLessThanOrEqual,
+            0x0D => OpCode::JumpIfGreaterThanOrEqual,
+            0x0E => OpCode::Call,
+            0x0F => OpCode::Return,
+            0x10 => OpCode::Print,
+            0x11 => OpCode::Store,
+            0x12 => OpCode::Load,
+            _ => panic!("Unknown opcode: {}", value),
+        }
+    }
 }
 
 pub enum Instruction {
@@ -71,61 +100,52 @@ impl VirtualMachine {
     pub fn execute(&mut self) {
         loop {
             let opcode = self.memory[self.ip as usize];
-            match opcode {
-                // Halt
-                0x00 => {
+            match opcode.into() {
+                OpCode::Halt => {
                     break;
                 }
-                // Push
-                0x01 => {
+                OpCode::Push => {
                     let value = self.memory[(self.ip + 1) as usize];
                     self.stack.push(value);
                     self.ip += 2;
                 }
-                // Pop
-                0x02 => {
+                OpCode::Pop => {
                     self.stack.pop();
                     self.ip += 1;
                 }
-                // Add
-                0x03 => {
+                OpCode::Add => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let result = op1 + op2;
                     self.stack.push(result);
                     self.ip += 1;
                 }
-                // Sub
-                0x04 => {
+                OpCode::Sub => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let result = op2 - op1;
                     self.stack.push(result);
                     self.ip += 1;
                 }
-                // Mul
-                0x05 => {
+                OpCode::Mul => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let result = op1 * op2;
                     self.stack.push(result);
                     self.ip += 1;
                 }
-                // Div
-                0x06 => {
+                OpCode::Div => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let result = op2 / op1;
                     self.stack.push(result);
                     self.ip += 1;
                 }
-                // Jump
-                0x07 => {
+                OpCode::Jump => {
                     let address = self.memory[(self.ip + 1) as usize];
                     self.ip = address;
                 }
-                // JumpIfEqual
-                0x08 => {
+                OpCode::JumpIfEqual => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let address = self.memory[(self.ip + 1) as usize];
@@ -135,8 +155,7 @@ impl VirtualMachine {
                         self.ip += 2;
                     }
                 }
-                // JumpIfNotEqual
-                0x09 => {
+                OpCode::JumpIfNotEqual => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let address = self.memory[(self.ip + 1) as usize];
@@ -146,8 +165,7 @@ impl VirtualMachine {
                         self.ip += 2;
                     }
                 }
-                // JumpIfLessThan
-                0x0A => {
+                OpCode::JumpIfLessThan => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let address = self.memory[(self.ip + 1) as usize];
@@ -157,8 +175,7 @@ impl VirtualMachine {
                         self.ip += 2;
                     }
                 }
-                // JumpIfGreaterThan
-                0x0B => {
+                OpCode::JumpIfGreaterThan => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let address = self.memory[(self.ip + 1) as usize];
@@ -168,8 +185,7 @@ impl VirtualMachine {
                         self.ip += 2;
                     }
                 }
-                // JumpIfLessThanOrEqual
-                0x0C => {
+                OpCode::JumpIfLessThanOrEqual => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let address = self.memory[(self.ip + 1) as usize];
@@ -179,8 +195,7 @@ impl VirtualMachine {
                         self.ip += 2;
                     }
                 }
-                // JumpIfGreaterThanOrEqual
-                0x0D => {
+                OpCode::JumpIfGreaterThanOrEqual => {
                     let op1 = self.stack.pop().unwrap();
                     let op2 = self.stack.pop().unwrap();
                     let address = self.memory[(self.ip + 1) as usize];
@@ -190,39 +205,31 @@ impl VirtualMachine {
                         self.ip += 2;
                     }
                 }
-                // Call
-                0x0E => {
+                OpCode::Call => {
                     let address = self.memory[(self.ip + 1) as usize];
                     self.stack.push(self.ip + 2);
                     self.ip = address;
                 }
-                // Return
-                0x0F => {
+                OpCode::Return => {
                     let address = self.stack.pop().unwrap();
                     self.ip = address;
                 }
-                // Print
-                0x10 => {
+                OpCode::Print => {
                     let value = self.stack.last().unwrap();
                     println!("{}", value);
                     self.ip += 1;
                 }
-                // Store
-                0x11 => {
+                OpCode::Store => {
                     let address = self.memory[(self.ip + 1) as usize];
                     let value = self.stack.pop().unwrap();
                     self.memory[address as usize] = value;
                     self.ip += 2;
                 }
-                // Load
-                0x12 => {
+                OpCode::Load => {
                     let address = self.memory[(self.ip + 1) as usize];
                     let value = self.memory[address as usize];
                     self.stack.push(value);
                     self.ip += 2;
-                }
-                _ => {
-                    panic!("unknown opcode: {}", opcode);
                 }
             }
         }
